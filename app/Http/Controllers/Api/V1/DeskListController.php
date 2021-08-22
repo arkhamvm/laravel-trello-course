@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\DeskListStoreRequest;
+use App\Http\Requests\DeskListUpdateRequest;
 use App\Http\Resources\DeskListResource;
 use App\Models\DeskList;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class DeskListController extends Controller
 {
@@ -30,12 +33,14 @@ class DeskListController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  DeskListStoreRequest $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(DeskListStoreRequest $request)
     {
-        //
+        $createdList = DeskList::create($request->validated());
+
+        return new DeskListResource($createdList);
     }
 
     /**
@@ -52,23 +57,27 @@ class DeskListController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  DeskListUpdateRequest  $request
+     * @param  DeskList $deskList
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(DeskListUpdateRequest $request, DeskList $deskList)
     {
-        //
+        $deskList->update($request->validated());
+
+        return new DeskListResource($deskList);
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  DeskList $deskList
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(DeskList $deskList)
     {
-        //
+        $deskList->delete();
+
+        return response(null, Response::HTTP_NO_CONTENT);
     }
 }

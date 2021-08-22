@@ -101,7 +101,7 @@ export default {
     validations: {
         newDeskName: {
             required,
-            maxLength: maxLength(10),
+            maxLength: maxLength(50),
         }
     }
 }
