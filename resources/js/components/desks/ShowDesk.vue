@@ -35,7 +35,7 @@
                     Field required.
                 </div>
                 <div class="invalid-feedback" v-if="!$v.newListName.maxLength">
-                    Max {{$v.desk.name.$params.maxLength.max}} symbols.
+                    Max {{$v.newListName.$params.maxLength.max}} symbols.
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Create List</button>
@@ -71,6 +71,32 @@
                         </h4>
 
                         <button @click="deleteList(list.id)" type="button" class="btn btn-danger mt-3">Remove</button>
+
+                        <div v-for="card of list.cards" :key="card.id" class="card mt-3 bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title d-flex justify-content-between align-items-center" style="cursor: pointer">
+                                    {{ card.name }}
+                                </h4>
+                                <button @click="deleteCard(card.id)" type="button" class="btn btn-secondary btn-danger mt-3">Remove</button>
+                            </div>
+                        </div>
+                        <form @submit.prevent="createCard(list.id)">
+                            <div class="form-group mb-1">
+                                <input
+                                    v-model="newCardNames[list.id]"
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Enter Card name"
+                                    :class="{'is-invalid': $v.newCardNames.$each[list.id].$error}"
+                                >
+                                <div class="invalid-feedback" v-if="!$v.newCardNames.$each[list.id].required">
+                                    Field required.
+                                </div>
+                                <div class="invalid-feedback" v-if="!$v.newCardNames.$each[list.id].maxLength">
+                                    Max {{$v.newCardNames.$each[list.id].$params.maxLength.max}} symbols.
+                                </div>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -87,6 +113,7 @@ export default {
         return {
             desk: null,
             newListName: null,
+            newCardNames: [],
             error: false,
             loading: true,
             lists: [],
@@ -125,6 +152,10 @@ export default {
                 }
             })
                 .then(resp => {
+                    resp.data.data.forEach((list) => {
+                        this.newCardNames[list.id] = '';
+                    })
+
                     this.lists = resp.data.data;
                 })
                 .catch(err => {
@@ -135,14 +166,14 @@ export default {
                 })
             ;
         },
-        deleteList(id) {
+        deleteList(listId) {
             if(confirm('Are you high?')) {
-                axios.delete('/api/V1/desk-lists/' + id)
+                axios.delete('/api/V1/desk-lists/' + listId)
                     .then(() => this.getLists())
                 ;
             }
         },
-        createList(name) {
+        createList() {
             this.$v.newListName.$touch();
             if (this.$v.newListName.$anyError) {
                 return;
@@ -153,8 +184,9 @@ export default {
                 name:    this.newListName,
             })
                 .then(() => {
-                    this.getLists();
                     this.newListName = '';
+                    this.$v.$reset();
+                    this.getLists();
                 })
                 .catch(err => {
                     if (err.response.data.errors.name) {
@@ -166,8 +198,8 @@ export default {
                 })
             ;
         },
-        updateDeskList(id, name) {
-            axios.patch('/api/V1/desk-lists/' + id, {
+        updateDeskList(listId, name) {
+            axios.patch('/api/V1/desk-lists/' + listId, {
                 name,
             })
                 .then(() => {
@@ -179,6 +211,38 @@ export default {
                 })
             ;
         },
+        createCard(listId) {
+            this.$v.newCardNames.$each[listId].$touch();
+            if (this.$v.newCardNames.$each[listId].$anyError) {
+                return;
+            }
+
+            axios.post('/api/V1/cards', {
+                desk_list_id: listId,
+                name:         this.newCardNames[listId],
+            })
+                .then(() => {
+                    this.newCardNames[listId] = '';
+                    this.$v.$reset();
+                    this.getLists();
+                })
+                .catch(err => {
+                    if (err.response.data.errors.name) {
+                        this.error = err.response.data.errors.name[0];
+                    }
+                    else {
+                        this.error = err;
+                    }
+                })
+            ;
+        },
+        deleteCard(cardId) {
+            if(confirm('Are you high?')) {
+                axios.delete('/api/V1/cards/' + cardId)
+                    .then(() => this.getLists())
+                ;
+            }
+        }
     },
     mounted() {
         this.getDesk();
@@ -195,7 +259,13 @@ export default {
             required,
             maxLength: maxLength(50),
         },
-    }
+        newCardNames: {
+            $each: {
+                required,
+                maxLength: maxLength(50),
+            },
+        },
+    },
 }
 </script>
 

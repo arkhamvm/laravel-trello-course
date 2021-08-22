@@ -74,8 +74,9 @@ export default {
                 name: this.newDeskName,
             })
                 .then(() => {
-                    this.getDesks();
                     this.newDeskName = '';
+                    this.$v.$reset();
+                    this.getDesks();
                 })
                 .catch(err => {
                     if (err.response.data.errors.name) {
