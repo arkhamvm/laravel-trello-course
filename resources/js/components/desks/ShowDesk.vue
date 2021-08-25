@@ -74,12 +74,52 @@
 
                         <div v-for="card of list.cards" :key="card.id" class="card mt-3 bg-light">
                             <div class="card-body">
-                                <h4 class="card-title d-flex justify-content-between align-items-center" style="cursor: pointer">
+                                <h4 class="card-title d-flex justify-content-between align-items-center mb-3" style="cursor: pointer">
                                     {{ card.name }}
                                 </h4>
-                                <button @click="deleteCard(card.id)" type="button" class="btn btn-secondary btn-danger mt-3">Remove</button>
+                                <button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    data-toggle="modal"
+                                    data-target="#card-modal"
+                                    @click="getCard(card.id)"
+                                >
+                                    Open
+                                </button>
+                                <button @click="deleteCard(card.id)" type="button" class="btn btn-secondary btn-danger">Remove</button>
                             </div>
                         </div>
+
+                        <div class="modal fade" id="card-modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLongTitle" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <form
+                                            @submit.prevent="updateCard(currentCard.id, currentCard.name)"
+                                            class="modal-title d-flex justify-content-between align-items-center"
+                                            id="exampleModalLongTitle"
+                                        >
+                                            <input
+                                                v-model="currentCard.name"
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Enter Card name"
+                                            >
+                                        </form>
+
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div v-for="task of currentCard.tasks" :key="'task_' + task.id">
+                                            {{ task.name }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <form @submit.prevent="createCard(list.id)">
                             <div class="form-group mb-1">
                                 <input
@@ -118,6 +158,7 @@ export default {
             loading: true,
             lists: [],
             listEditId: null,
+            currentCard: {},
         }
     },
     methods: {
@@ -166,6 +207,16 @@ export default {
                 })
             ;
         },
+        getCard(cardId) {
+            axios.get('/api/V1/cards/' + cardId)
+                .then(resp => {
+                    this.currentCard = resp.data.data;
+                })
+                .catch(err => {
+                    this.error = err;
+                })
+            ;
+        },
         deleteList(listId) {
             if(confirm('Are you high?')) {
                 axios.delete('/api/V1/desk-lists/' + listId)
@@ -185,7 +236,7 @@ export default {
             })
                 .then(() => {
                     this.newListName = '';
-                    this.$v.$reset();
+                    this.$v.newListName.$reset();
                     this.getLists();
                 })
                 .catch(err => {
@@ -242,7 +293,19 @@ export default {
                     .then(() => this.getLists())
                 ;
             }
-        }
+        },
+        updateCard(cardId, name) {
+            axios.patch('/api/V1/cards/' + cardId, {
+                name,
+            })
+                .then(() => {
+                    this.getLists();
+                })
+                .catch(err => {
+                    this.error = err;
+                })
+            ;
+        },
     },
     mounted() {
         this.getDesk();
@@ -253,7 +316,7 @@ export default {
             name: {
                 required,
                 maxLength: maxLength(50),
-            }
+            },
         },
         newListName: {
             required,
